@@ -307,8 +307,8 @@
     }
 
     .charmander-img {
-      width: 110px;
-      height: 110px;
+      width: 140px;
+      height: 140px;
       object-fit: contain;
     }
 
@@ -340,7 +340,6 @@
     <header>
       <span class="team-label">🔥 빵팀 x 파이리</span>
       <h1>
-        <!-- 파이리 머리 SVG 아이콘 -->
         <svg width="40" height="40" viewBox="0 0 100 100">
           <circle cx="50" cy="50" r="45" fill="#f97316"/>
           <circle cx="35" cy="40" r="6" fill="#ffffff"/><circle cx="37" cy="40" r="3" fill="#000"/>
@@ -426,7 +425,7 @@
 
           <!-- 파이리 표정 리액션 -->
           <div class="charmander-reaction">
-            <img id="charmander-img" class="charmander-img" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23f97316'/><circle cx='35' cy='40' r='5' fill='%23fff'/><circle cx='65' cy='40' r='5' fill='%23fff'/><path d='M 35 60 Q 50 70 65 60' stroke='%23fff' stroke-width='4' fill='none'/></svg>" alt="파이리 상태">
+            <img id="charmander-img" class="charmander-img" src="https://img.pokemondb.net/artwork/large/charmander.jpg" alt="파이리 상태">
             <div id="reaction-text" class="reaction-text">사진이나 카메라를 연결해 주세요!</div>
           </div>
 
@@ -453,13 +452,18 @@
   <script>
     const MODEL_URL = "https://teachablemachine.withgoogle.com/models/IQ8U4bu7b/";
     
-    // SVG 파이리 캐릭터 (기쁨 / 슬픔 / 대기)
-    const CHARMANDER_HAPPY = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Z2cGp2Mnlhd3cxaHk3ZXc3ZGZ1cjA0N3M5dG9yMWd1eDhqZXJwayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/U2nN0ridM4lXy/giphy.gif"; // 기쁜 파이리 GIF
-    const CHARMANDER_SAD = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNndicmVzcThkc2E4azJhdG9sbWVvOHBwY3RsdmptbW94OW00eXBzciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/L9543E29v4A92/giphy.gif";   // 슬픈 파이리 GIF
-    const CHARMANDER_IDLE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23f97316'/><circle cx='35' cy='40' r='5' fill='%23000'/><circle cx='65' cy='40' r='5' fill='%23000'/><path d='M 35 65 Q 50 55 65 65' stroke='%23000' stroke-width='4' fill='none'/></svg>";
+    /* ==================================================
+       사용자 업로드 이미지 적용
+       1. 기본 화면: 양팔 벌려 서 있는 기본 파이리
+       2. 빵 있음: 신나서 신체 동작을 취하는 파이리
+       3. 빵 없음: 시무룩한 표정의 파이리
+    ================================================== */
+    const CHARMANDER_IDLE = "https://img.pokemondb.net/artwork/large/charmander.jpg"; 
+    const CHARMANDER_HAPPY = "https://archives.bulbagarden.net/media/upload/thumb/7/73/0004Charmander.png/600px-0004Charmander.png"; 
+    const CHARMANDER_SAD = "https://i.ibb.co/s33x2x9/charmander-sad.jpg";
 
     let model, webcam, classNames = [];
-    let currentMode = 'file'; // 'file' 또는 'webcam'
+    let currentMode = 'file';
     let isWebcamRunning = false;
 
     // DOM 요소
@@ -475,13 +479,11 @@
     const charmanderImg = document.getElementById("charmander-img");
     const reactionText = document.getElementById("reaction-text");
 
-    // 상태 메시지 
     function setStatus(msg, type = "") {
       statusElement.textContent = msg;
       statusElement.className = "status " + type;
     }
 
-    // 모드 전환 (사진 vs 카메라)
     function switchMode(mode) {
       if (currentMode === mode) return;
       currentMode = mode;
@@ -491,7 +493,6 @@
       document.getElementById('input-file-area').style.display = mode === 'file' ? 'block' : 'none';
       document.getElementById('input-webcam-area').style.display = mode === 'webcam' ? 'block' : 'none';
 
-      // 웹캠 중지 및 화면 초기화
       stopWebcam();
       resetUI();
     }
@@ -506,17 +507,13 @@
       reactionText.textContent = "사진을 올리거나 카메라를 켜주세요!";
     }
 
-    // 모델 로드
     async function init() {
       try {
         setStatus("파이리 AI 모델을 불러오는 중...");
         model = await tmImage.load(MODEL_URL + "model.json", MODEL_URL + "metadata.json");
         classNames = model.getClassLabels();
         
-        // 클래스 태그 생성
         classListElement.innerHTML = classNames.map(name => `<span class="class-tag">${name}</span>`).join('');
-        
-        // UI 게이지 바 틀 생성
         createPredictionUI();
         setStatus("모델 로딩 완료! 분석을 시작할 수 있습니다.", "success");
       } catch (err) {
@@ -539,7 +536,6 @@
       `).join('');
     }
 
-    // 파일 업로드 처리
     imageUpload.addEventListener("change", async (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -560,7 +556,6 @@
       reader.readAsDataURL(file);
     });
 
-    // 실시간 웹캠 토글
     async function toggleWebcam() {
       const btn = document.getElementById("webcam-btn");
 
@@ -571,7 +566,7 @@
       } else {
         try {
           setStatus("카메라 연결 중...");
-          webcam = new tmImage.Webcam(300, 300, true); // width, height, flip
+          webcam = new tmImage.Webcam(300, 300, true);
           await webcam.setup();
           await webcam.play();
           
@@ -608,7 +603,6 @@
       if (btn) btn.textContent = "📷 웹캠 시작하기";
     }
 
-    // 예측 결과 업데이트 및 파이리 반응 제어
     function updateResults(predictions) {
       let highest = predictions[0];
 
@@ -622,29 +616,25 @@
         }
       });
 
-      // 최고 확률 클래스 표시
       const highestPercent = Math.round(highest.probability * 100);
       topClassElement.textContent = highest.className;
       topProbabilityElement.textContent = `확률: ${highestPercent}%`;
 
-      /* ====================================
-         클래스 결과에 따른 파이리 표정 처리
-      ==================================== */
       const className = highest.className.toLowerCase();
 
-      // 결과 클래스명에 '있음'이 포함되었거나, 빵 이름이 직접 감지된 경우 (긍정)
+      // 빵 있음 (2번째 파이리 사진)
       if (className.includes("있음") || className.includes("있") || className.includes("파이리")) {
         charmanderImg.src = CHARMANDER_HAPPY;
         reactionText.textContent = "🔥 신난다! 파이리빵 재고가 있어요!";
-        reactionText.style.color = "#166534"; // 초록색 문구
+        reactionText.style.color = "#166534";
       } 
-      // '없음'이 포함된 경우 (부정)
+      // 빵 없음 (3번째 파이리 사진)
       else if (className.includes("없음") || className.includes("없")) {
         charmanderImg.src = CHARMANDER_SAD;
         reactionText.textContent = "😭 아쉬워요... 파이리빵이 다 팔렸어요!";
-        reactionText.style.color = "#b91c1c"; // 빨간색 문구
+        reactionText.style.color = "#b91c1c";
       } 
-      // 그 외 기타
+      // 기타 (기본 파이리 사진)
       else {
         charmanderImg.src = CHARMANDER_IDLE;
         reactionText.textContent = `현재 상태: ${highest.className}`;
@@ -652,7 +642,6 @@
       }
     }
 
-    // 초기화
     init();
   </script>
 </body>
