@@ -2,36 +2,31 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-
-  <!-- 스마트폰에서도 화면 크기에 맞게 표시 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>파이리빵 재고 확인하기 | 빵팀</title>
 
-  <title>매점에 있는 빵의 재고 확인하기 | 빵팀</title>
-
-  <!-- TensorFlow.js 공식 CDN -->
+  <!-- TensorFlow.js 및 Teachable Machine CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-
-  <!-- Teachable Machine Image 공식 CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
   <style>
     /* =========================
-       기본 디자인 설정
+       파이리(주황) 테마 디자인 설정
     ========================= */
     :root {
-      --primary: #2563eb;
-      --primary-dark: #1d4ed8;
-      --background: #f5f7fb;
+      --primary: #f97316;          /* 파이리 메인 오렌지 */
+      --primary-dark: #ea580c;     /* 진한 오렌지 */
+      --primary-light: #ffedd5;    /* 연한 오렌지 배경 */
+      --accent: #ef4444;           /* 꼬리 불꽃 레드 */
+      --background: #fff7ed;       /* Warm Orange White */
       --card: #ffffff;
-      --text: #1f2937;
-      --sub-text: #6b7280;
-      --border: #dbe1ea;
+      --text: #431407;             /* 따뜻한 밤색 텍스트 */
+      --sub-text: #9a3412;
+      --border: #fed7aa;
       --success-bg: #f0fdf4;
       --success-text: #166534;
       --error-bg: #fef2f2;
       --error-text: #b91c1c;
-      --warning-bg: #fff7ed;
-      --warning-text: #9a3412;
     }
 
     * {
@@ -42,12 +37,7 @@
       margin: 0;
       background: var(--background);
       color: var(--text);
-      font-family:
-        "Pretendard",
-        "Apple SD Gothic Neo",
-        "Noto Sans KR",
-        Arial,
-        sans-serif;
+      font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
       line-height: 1.6;
     }
 
@@ -57,61 +47,62 @@
       padding: 24px 0 48px;
     }
 
-    /* =========================
-       프로젝트 소개
-    ========================= */
+    /* 헤더 디자인 */
     header {
       text-align: center;
-      padding: 32px 16px;
+      padding: 24px 16px;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 25px rgba(249, 115, 22, 0.1);
     }
 
     .team-label {
       display: inline-block;
-      padding: 6px 14px;
+      padding: 6px 16px;
       border-radius: 999px;
-      background: #e8efff;
+      background: #ffebd5;
       color: var(--primary-dark);
-      font-size: 0.9rem;
-      font-weight: 700;
+      font-size: 0.95rem;
+      font-weight: 800;
     }
 
     h1 {
-      margin: 14px 0 10px;
-      font-size: clamp(1.8rem, 6vw, 3rem);
-      line-height: 1.3;
+      margin: 12px 0 8px;
+      font-size: clamp(1.8rem, 5vw, 2.6rem);
+      color: var(--primary-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
     }
 
     .subtitle {
       max-width: 650px;
       margin: 0 auto;
       color: var(--sub-text);
+      font-weight: 500;
     }
 
-    /* =========================
-       공통 카드
-    ========================= */
+    /* 카드 공통 */
     .card {
       margin-bottom: 20px;
       padding: 24px;
       background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+      border: 2px solid var(--border);
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
     }
 
     .card h2 {
       margin-top: 0;
       margin-bottom: 12px;
       font-size: 1.3rem;
+      color: var(--primary-dark);
     }
 
-    .card p {
-      margin: 0;
-    }
-
-    /* =========================
-       문제 / 사용자
-    ========================= */
+    /* 문제 / 사용자 */
     .info-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -120,1232 +111,549 @@
 
     .info-box {
       padding: 18px;
-      background: #f8fafc;
+      background: var(--primary-light);
       border: 1px solid var(--border);
       border-radius: 14px;
     }
 
     .info-box strong {
       display: block;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       color: var(--primary-dark);
     }
 
-    /* =========================
-       모델 체험 영역
-    ========================= */
-    .experience-section {
-      border: 2px solid #bfdbfe;
-    }
-
-    .experience-header {
+    /* 입력 방식 선택 탭 */
+    .mode-selector {
+      display: flex;
+      gap: 12px;
       margin-bottom: 20px;
     }
 
-    .experience-header p {
+    .tab-button {
+      flex: 1;
+      padding: 14px;
+      border: 2px solid var(--border);
+      background: var(--card);
       color: var(--sub-text);
+      font-weight: 700;
+      font-size: 1rem;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
 
-    /* 실제 클래스 이름 표시 */
+    .tab-button.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary-dark);
+      box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+    }
+
+    /* 구분 클래스 태그 */
     .class-list {
       min-height: 48px;
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
       align-items: center;
-      margin: 12px 0 20px;
+      margin: 10px 0 20px;
     }
 
     .class-tag {
-      padding: 8px 14px;
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
+      padding: 6px 14px;
+      background: #fff3e6;
+      border: 1px solid var(--border);
       border-radius: 999px;
-      color: #1e40af;
+      color: var(--primary-dark);
       font-weight: 700;
     }
 
-    .loading-text {
-      color: var(--sub-text);
-      font-size: 0.95rem;
+    /* 모드별 입력 영역 */
+    .input-container {
+      margin-bottom: 20px;
     }
 
-    /* =========================
-       파일 선택 영역
-    ========================= */
     .upload-area {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-
       min-height: 180px;
       padding: 24px;
-
-      border: 2px dashed #93c5fd;
+      border: 2px dashed var(--primary);
       border-radius: 16px;
-
-      background: #f8fbff;
+      background: #fffaf5;
       text-align: center;
     }
 
-    .upload-area p {
-      color: var(--sub-text);
-      margin-bottom: 16px;
-    }
+    #image-upload { display: none; }
 
-    /* 실제 파일 input은 숨김 */
-    #image-upload {
-      display: none;
-    }
-
-    .upload-button {
+    .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-
-      min-width: 180px;
-      min-height: 52px;
-      padding: 12px 20px;
-
+      padding: 12px 24px;
       background: var(--primary);
       color: white;
-
+      border: none;
       border-radius: 12px;
       cursor: pointer;
       font-weight: 700;
-
+      font-size: 1rem;
       transition: background 0.2s ease;
+      gap: 8px;
     }
 
-    .upload-button:hover {
-      background: var(--primary-dark);
+    .btn:hover { background: var(--primary-dark); }
+    .btn.disabled { opacity: 0.5; pointer-events: none; }
+
+    .webcam-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
     }
 
-    .upload-button.disabled {
-      opacity: 0.55;
-      pointer-events: none;
-    }
-
-    /* =========================
-       상태 메시지
-    ========================= */
+    /* 상태 메시지 */
     .status {
       min-height: 44px;
-      margin: 20px 0;
-      padding: 12px 14px;
-
-      background: #f8fafc;
-      border-radius: 10px;
-
+      margin: 16px 0;
+      padding: 12px 16px;
+      background: #fff3e6;
+      border-radius: 12px;
       color: var(--sub-text);
       font-size: 0.95rem;
+      font-weight: 600;
     }
 
-    .status.success {
-      background: var(--success-bg);
-      color: var(--success-text);
-      border: 1px solid #bbf7d0;
-    }
+    .status.success { background: var(--success-bg); color: var(--success-text); border: 1px solid #bbf7d0; }
+    .status.error { background: var(--error-bg); color: var(--error-text); border: 1px solid #fecaca; }
 
-    .status.error {
-      background: var(--error-bg);
-      color: var(--error-text);
-      border: 1px solid #fecaca;
-    }
-
-    /* =========================
-       이미지와 예측 결과
-    ========================= */
+    /* 결과 영역 Layout */
     .result-area {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 20px;
-      align-items: stretch;
     }
 
-    /* 업로드한 사진 */
-    .image-box {
+    .preview-box {
       min-height: 320px;
-
       display: flex;
       align-items: center;
       justify-content: center;
-
       overflow: hidden;
       border-radius: 16px;
-
-      background: #111827;
+      background: #2d1a0e;
+      position: relative;
     }
 
-    #preview-image {
-      display: none;
-
-      width: 100%;
-      height: 100%;
-      max-height: 450px;
-
+    #preview-image, #webcam-container video, #webcam-container canvas {
+      width: 100% !important;
+      height: 100% !important;
       object-fit: contain;
     }
 
     .image-placeholder {
       padding: 24px;
-      color: #d1d5db;
+      color: #fed7aa;
       text-align: center;
     }
 
-    /* 예측 결과 */
     .prediction-box {
-      min-height: 320px;
       padding: 20px;
-
-      background: #fafcff;
+      background: #fffaf5;
       border: 1px solid var(--border);
       border-radius: 16px;
-    }
-
-    .prediction-title {
-      margin: 0 0 12px;
-      color: var(--sub-text);
-      font-size: 0.95rem;
-    }
-
-    /* 가장 높은 예측 결과 */
-    .top-prediction {
-      min-height: 120px;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-
-      padding: 18px;
-      margin-bottom: 18px;
-
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      border-radius: 14px;
     }
 
-    .top-prediction-label {
-      margin-bottom: 4px;
-      color: #475569;
-      font-size: 0.9rem;
+    .top-prediction {
+      padding: 16px;
+      margin-bottom: 16px;
+      background: var(--primary-light);
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      text-align: center;
     }
 
     #top-class {
-      min-height: 42px;
       color: var(--primary-dark);
       font-size: 1.8rem;
       font-weight: 800;
     }
 
     #top-probability {
-      min-height: 26px;
       color: var(--sub-text);
       font-weight: 700;
     }
 
-    /* 클래스별 확률 */
-    #prediction-list {
-      min-height: 120px;
-    }
-
-    .prediction-item {
-      margin-bottom: 14px;
-    }
-
-    .prediction-row {
+    /* 파이리 감정 표현 박스 */
+    .charmander-reaction {
       display: flex;
-      justify-content: space-between;
-      gap: 16px;
-
-      margin-bottom: 6px;
-    }
-
-    .prediction-name {
-      font-weight: 700;
-    }
-
-    .prediction-percent {
-      min-width: 60px;
-      text-align: right;
-      color: var(--sub-text);
-    }
-
-    .progress-track {
-      height: 12px;
-      overflow: hidden;
-
-      background: #e5e7eb;
-      border-radius: 999px;
-    }
-
-    .progress-bar {
-      width: 0%;
-      height: 100%;
-
-      background: var(--primary);
-      border-radius: 999px;
-
-      transition: width 0.25s ease;
-    }
-
-    .prediction-note {
-      margin-top: 16px;
-      padding: 12px 14px;
-
-      background: var(--warning-bg);
-      border: 1px solid #fed7aa;
-      border-radius: 10px;
-
-      color: var(--warning-text);
-      font-size: 0.9rem;
-    }
-
-    /* =========================
-       한계
-    ========================= */
-    .limit-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
-    }
-
-    .limit-box {
-      padding: 18px;
-
-      background: #f8fafc;
-      border: 1px solid var(--border);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      margin-bottom: 16px;
+      background: #ffffff;
+      border: 2px solid var(--border);
       border-radius: 14px;
-    }
-
-    .limit-box h3 {
-      margin-top: 0;
-      margin-bottom: 8px;
-      font-size: 1rem;
-    }
-
-    .limit-box p {
-      color: var(--sub-text);
-    }
-
-    /* =========================
-       팀 정보
-    ========================= */
-    footer {
-      padding: 24px 16px 8px;
       text-align: center;
-      color: var(--sub-text);
-      font-size: 0.95rem;
     }
 
-    footer strong {
-      color: var(--text);
+    .charmander-img {
+      width: 110px;
+      height: 110px;
+      object-fit: contain;
     }
 
-    /* =========================
-       모바일 반응형
-    ========================= */
+    .reaction-text {
+      margin-top: 8px;
+      font-weight: 800;
+      font-size: 1.05rem;
+      color: var(--primary-dark);
+    }
+
+    /* 게이지 바 */
+    .prediction-item { margin-bottom: 12px; }
+    .prediction-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-weight: 700; }
+    .progress-track { height: 12px; background: #fed7aa; border-radius: 999px; overflow: hidden; }
+    .progress-bar { width: 0%; height: 100%; background: var(--primary); border-radius: 999px; transition: width 0.25s ease; }
+
+    /* 모바일 반응형 */
     @media (max-width: 700px) {
-      .container {
-        width: min(100% - 24px, 1000px);
-        padding-top: 12px;
-      }
-
-      header {
-        padding: 24px 8px;
-      }
-
-      .card {
-        padding: 18px;
-      }
-
-      .info-grid,
-      .result-area,
-      .limit-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .image-box {
-        min-height: 260px;
-      }
-
-      .prediction-box {
-        min-height: 0;
-      }
+      .info-grid, .result-area { grid-template-columns: 1fr; }
+      .preview-box { min-height: 250px; }
     }
   </style>
 </head>
-
 <body>
 
   <main class="container">
 
-    <!-- =========================
-         프로젝트 소개
-    ========================= -->
+    <!-- 헤더 -->
     <header>
-      <span class="team-label">빵팀</span>
-
-      <h1>매점에 있는 빵의 재고 확인하기</h1>
-
-      <p class="subtitle">
-        매점의 빵 진열 사진을 입력하면 원하는 빵의 유무를 분류해 보는 이미지 분류 모델입니다.
-      </p>
+      <span class="team-label">🔥 빵팀 x 파이리</span>
+      <h1>
+        <!-- 파이리 머리 SVG 아이콘 -->
+        <svg width="40" height="40" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" fill="#f97316"/>
+          <circle cx="35" cy="40" r="6" fill="#ffffff"/><circle cx="37" cy="40" r="3" fill="#000"/>
+          <circle cx="65" cy="40" r="6" fill="#ffffff"/><circle cx="63" cy="40" r="3" fill="#000"/>
+          <path d="M 40 65 Q 50 75 60 65" stroke="#ffffff" stroke-width="5" fill="none" stroke-linecap="round"/>
+        </svg>
+        포켓몬 파이리빵 재고 확인
+      </h1>
+      <p class="subtitle">매점 사진을 올리거나 카메라를 비춰 파이리빵 재고 유무를 분석해 보세요!</p>
     </header>
 
-
-    <!-- =========================
-         문제와 주요 사용자
-    ========================= -->
+    <!-- 개요 -->
     <section class="card">
-
       <div class="info-grid">
-
         <div class="info-box">
-          <strong>해결하려는 문제</strong>
-          매점에 갔는데 먹고 싶었던 간식이 없어 아쉬웠던 경험을 개선하기 위해 만들었습니다.
+          <strong>🔥 해결하려는 문제</strong>
+          매점에 갔을 때 인기 폭발인 파이리빵이 남아있는지 사전에 쉽게 확인하기 위해 개발했습니다.
         </div>
-
         <div class="info-box">
-          <strong>주요 사용자</strong>
-          한영외고 학생들
+          <strong>🎒 주요 사용자</strong>
+          한영외고 학생 및 파이리빵을 찾는 모든 학생들
         </div>
-
       </div>
-
     </section>
 
-
-    <!-- =========================
-         모델 체험
-    ========================= -->
-    <section class="card experience-section">
-
-      <div class="experience-header">
-        <h2>사진으로 모델 체험하기</h2>
-
-        <p>
-          빵이 진열된 매대 사진을 선택하면 모델이 이미지를 분석하고 분류 결과를 보여줍니다.
-        </p>
-      </div>
-
-
-      <!-- 실제 모델의 클래스 이름 -->
-      <strong>모델이 구분하는 실제 클래스</strong>
-
-      <div
-        id="class-list"
-        class="class-list"
-        aria-live="polite"
-      >
-        <span class="loading-text">
-          모델을 불러오는 중입니다.
-        </span>
-      </div>
-
-
-      <!-- 사진 업로드 영역 -->
-      <div class="upload-area">
-
-        <p>
-          빵이 진열된 매대 사진을 선택해 주세요.
-        </p>
-
-        <!-- accept="image/*"를 사용해 이미지 파일만 선택 -->
-        <input
-          type="file"
-          id="image-upload"
-          accept="image/*"
-        >
-
-        <label
-          for="image-upload"
-          id="upload-label"
-          class="upload-button"
-        >
-          사진 선택하기
-        </label>
-
-      </div>
-
-
-      <!-- 현재 상태 -->
-      <div
-        id="status"
-        class="status"
-        role="status"
-        aria-live="polite"
-      >
-        모델을 준비하고 있습니다.
-      </div>
-
-
-      <!-- 사진과 결과 -->
-      <div class="result-area">
-
-
-        <!-- 업로드한 사진 -->
-        <div class="image-box">
-
-          <div
-            id="image-placeholder"
-            class="image-placeholder"
-          >
-            선택한 사진이 이곳에 표시됩니다.
-          </div>
-
-          <img
-            id="preview-image"
-            alt="사용자가 선택한 빵 진열 사진"
-          >
-
-        </div>
-
-
-        <!-- 예측 결과 -->
-        <div class="prediction-box">
-
-          <p class="prediction-title">
-            가장 높은 예측 결과
-          </p>
-
-
-          <div class="top-prediction">
-
-            <span class="top-prediction-label">
-              현재 모델의 판단
-            </span>
-
-            <div id="top-class">-</div>
-
-            <div id="top-probability">-</div>
-
-          </div>
-
-
-          <p class="prediction-title">
-            클래스별 확률
-          </p>
-
-
-          <!-- 실제 클래스 수만큼 JavaScript에서 생성 -->
-          <div id="prediction-list"></div>
-
-
-          <div class="prediction-note">
-            가장 높은 확률의 결과가 반드시 정답이라는 뜻은 아닙니다.
-            사진의 각도나 빵이 진열된 매대의 모습에 따라 결과가 달라질 수 있습니다.
-          </div>
-
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- =========================
-         모델의 한계
-    ========================= -->
+    <!-- 모델 체험 섹션 -->
     <section class="card">
+      <h2>🔥 파이리빵 재고 판별기</h2>
 
-      <h2>결과를 사람이 다시 확인해야 하는 이유</h2>
-
-      <div class="limit-grid">
-
-        <div class="limit-box">
-          <h3>모델의 한계</h3>
-
-          <p>
-            빵이 진열되어 있는 매대의 모양이 다를 때 모델의 분류 결과가 정확하지 않을 수 있습니다.
-          </p>
-        </div>
-
-
-        <div class="limit-box">
-          <h3>사람이 확인해야 할 부분</h3>
-
-          <p>
-            이 모델은 빵의 유무를 분류하지만, 빵의 개수와 같은 정확한 수량까지 세지는 못합니다.
-          </p>
-        </div>
-
+      <!-- 분석 방식 선택 탭 -->
+      <div class="mode-selector">
+        <button id="tab-file" class="tab-button active" onclick="switchMode('file')">
+          📁 사진 업로드 방식
+        </button>
+        <button id="tab-webcam" class="tab-button" onclick="switchMode('webcam')">
+          📷 실시간 카메라 방식
+        </button>
       </div>
 
+      <!-- 구분 클래스 -->
+      <div style="font-weight: 700; color: var(--sub-text);">모델이 구분하는 클래스:</div>
+      <div id="class-list" class="class-list">
+        <span style="color: var(--sub-text);">모델 로딩 중...</span>
+      </div>
+
+      <!-- 입력 영역 (파일 방식) -->
+      <div id="input-file-area" class="input-container">
+        <div class="upload-area">
+          <p>매대 사진을 선택하면 분석을 시작합니다.</p>
+          <input type="file" id="image-upload" accept="image/*">
+          <label for="image-upload" id="upload-label" class="btn">사진 선택하기</label>
+        </div>
+      </div>
+
+      <!-- 입력 영역 (카메라 방식) -->
+      <div id="input-webcam-area" class="input-container" style="display: none;">
+        <div class="webcam-area">
+          <button id="webcam-btn" class="btn" onclick="toggleWebcam()">📷 웹캠 시작하기</button>
+        </div>
+      </div>
+
+      <!-- 상태 창 -->
+      <div id="status" class="status">모델을 준비하고 있습니다...</div>
+
+      <!-- 결과 표시 영역 -->
+      <div class="result-area">
+        <!-- 화면 / 프리뷰 -->
+        <div class="preview-box">
+          <div id="image-placeholder" class="image-placeholder">사진을 선택하거나<br>웹캠을 시작해 주세요.</div>
+          <img id="preview-image" style="display:none;" alt="선택된 이미지">
+          <div id="webcam-container"></div>
+        </div>
+
+        <!-- 예측 정보 & 파이리 반응 -->
+        <div class="prediction-box">
+          
+          <!-- 최고 예측 결과 -->
+          <div class="top-prediction">
+            <div style="font-size:0.85rem; color: var(--sub-text);">현재 분석 결과</div>
+            <div id="top-class">-</div>
+            <div id="top-probability">-</div>
+          </div>
+
+          <!-- 파이리 표정 리액션 -->
+          <div class="charmander-reaction">
+            <img id="charmander-img" class="charmander-img" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23f97316'/><circle cx='35' cy='40' r='5' fill='%23fff'/><circle cx='65' cy='40' r='5' fill='%23fff'/><path d='M 35 60 Q 50 70 65 60' stroke='%23fff' stroke-width='4' fill='none'/></svg>" alt="파이리 상태">
+            <div id="reaction-text" class="reaction-text">사진이나 카메라를 연결해 주세요!</div>
+          </div>
+
+          <!-- 세부 확률 -->
+          <div id="prediction-list"></div>
+        </div>
+      </div>
     </section>
 
+    <!-- 한계 및 안내 -->
+    <section class="card">
+      <h2>⚠️ 알아두기</h2>
+      <p style="color: var(--sub-text);">
+        카메라 각도나 매대 조명 환경에 따라 유무 판별 확률이 차이 날 수 있습니다. 또한 정확한 수량(개수)까지 세지는 못하므로 유무 확인용으로 활용해 주세요!
+      </p>
+    </section>
 
-    <!-- =========================
-         팀 정보
-    ========================= -->
     <footer>
-      <strong>빵팀</strong>
-      <br>
+      <strong>빵팀 (파이리 프로젝트)</strong><br>
       20914 윤재인 · 20915 이선우 · 20916 이수빈
     </footer>
-
   </main>
 
-
   <script>
-    /* ==========================================
-       티처블 머신 모델 주소
-    ========================================== */
-    const MODEL_URL =
-      "https://teachablemachine.withgoogle.com/models/IQ8U4bu7b/";
+    const MODEL_URL = "https://teachablemachine.withgoogle.com/models/IQ8U4bu7b/";
+    
+    // SVG 파이리 캐릭터 (기쁨 / 슬픔 / 대기)
+    const CHARMANDER_HAPPY = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Z2cGp2Mnlhd3cxaHk3ZXc3ZGZ1cjA0N3M5dG9yMWd1eDhqZXJwayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/U2nN0ridM4lXy/giphy.gif"; // 기쁜 파이리 GIF
+    const CHARMANDER_SAD = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNndicmVzcThkc2E4azJhdG9sbWVvOHBwY3RsdmptbW94OW00eXBzciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/L9543E29v4A92/giphy.gif";   // 슬픈 파이리 GIF
+    const CHARMANDER_IDLE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23f97316'/><circle cx='35' cy='40' r='5' fill='%23000'/><circle cx='65' cy='40' r='5' fill='%23000'/><path d='M 35 65 Q 50 55 65 65' stroke='%23000' stroke-width='4' fill='none'/></svg>";
 
-    const MODEL_JSON_URL =
-      MODEL_URL + "model.json";
+    let model, webcam, classNames = [];
+    let currentMode = 'file'; // 'file' 또는 'webcam'
+    let isWebcamRunning = false;
 
-    const METADATA_JSON_URL =
-      MODEL_URL + "metadata.json";
+    // DOM 요소
+    const imageUpload = document.getElementById("image-upload");
+    const previewImage = document.getElementById("preview-image");
+    const imagePlaceholder = document.getElementById("image-placeholder");
+    const webcamContainer = document.getElementById("webcam-container");
+    const classListElement = document.getElementById("class-list");
+    const predictionList = document.getElementById("prediction-list");
+    const topClassElement = document.getElementById("top-class");
+    const topProbabilityElement = document.getElementById("top-probability");
+    const statusElement = document.getElementById("status");
+    const charmanderImg = document.getElementById("charmander-img");
+    const reactionText = document.getElementById("reaction-text");
 
-
-    /* ==========================================
-       HTML 요소 가져오기
-    ========================================== */
-    const imageUpload =
-      document.getElementById("image-upload");
-
-    const uploadLabel =
-      document.getElementById("upload-label");
-
-    const previewImage =
-      document.getElementById("preview-image");
-
-    const imagePlaceholder =
-      document.getElementById("image-placeholder");
-
-    const classListElement =
-      document.getElementById("class-list");
-
-    const predictionList =
-      document.getElementById("prediction-list");
-
-    const topClassElement =
-      document.getElementById("top-class");
-
-    const topProbabilityElement =
-      document.getElementById("top-probability");
-
-    const statusElement =
-      document.getElementById("status");
-
-
-    /* ==========================================
-       모델과 상태를 저장하는 변수
-    ========================================== */
-    let model = null;
-
-    let classNames = [];
-
-    let isModelLoading = false;
-
-    let isPredicting = false;
-
-
-    /* ==========================================
-       상태 메시지 표시 함수
-    ========================================== */
-    function setStatus(message, type = "") {
-
-      statusElement.textContent = message;
-
-      statusElement.className = "status";
-
-      if (type) {
-        statusElement.classList.add(type);
-      }
-
+    // 상태 메시지 
+    function setStatus(msg, type = "") {
+      statusElement.textContent = msg;
+      statusElement.className = "status " + type;
     }
 
+    // 모드 전환 (사진 vs 카메라)
+    function switchMode(mode) {
+      if (currentMode === mode) return;
+      currentMode = mode;
 
-    /* ==========================================
-       모델 불러오기
+      document.getElementById('tab-file').classList.toggle('active', mode === 'file');
+      document.getElementById('tab-webcam').classList.toggle('active', mode === 'webcam');
+      document.getElementById('input-file-area').style.display = mode === 'file' ? 'block' : 'none';
+      document.getElementById('input-webcam-area').style.display = mode === 'webcam' ? 'block' : 'none';
 
-       클래스 이름도 모델의 metadata에서
-       자동으로 가져옵니다.
-    ========================================== */
-    async function loadModel() {
+      // 웹캠 중지 및 화면 초기화
+      stopWebcam();
+      resetUI();
+    }
 
-      // 이미 모델을 불러왔다면 다시 불러오지 않음
-      if (model) {
-        return true;
-      }
+    function resetUI() {
+      previewImage.style.display = 'none';
+      webcamContainer.innerHTML = '';
+      imagePlaceholder.style.display = 'block';
+      topClassElement.textContent = '-';
+      topProbabilityElement.textContent = '-';
+      charmanderImg.src = CHARMANDER_IDLE;
+      reactionText.textContent = "사진을 올리거나 카메라를 켜주세요!";
+    }
 
-
-      // 이미 로딩 중이라면 중복 실행 방지
-      if (isModelLoading) {
-        return false;
-      }
-
-
-      isModelLoading = true;
-
-      imageUpload.disabled = true;
-
-      uploadLabel.classList.add("disabled");
-
-      setStatus(
-        "이미지 분류 모델을 불러오는 중입니다..."
-      );
-
-
+    // 모델 로드
+    async function init() {
       try {
-
-        // 티처블 머신 이미지 모델 로드
-        model = await tmImage.load(
-          MODEL_JSON_URL,
-          METADATA_JSON_URL
-        );
-
-
-        /* --------------------------------
-           실제 클래스 이름 가져오기
-
-           코드에 클래스 이름을 직접 입력하지 않고
-           모델의 메타데이터에서 가져옵니다.
-        -------------------------------- */
-        classNames =
-          model.getClassLabels();
-
-
-        // 클래스 정보 확인
-        if (
-          !Array.isArray(classNames) ||
-          classNames.length === 0
-        ) {
-          throw new Error(
-            "모델의 클래스 정보를 찾을 수 없습니다."
-          );
-        }
-
-
-        // 실제 클래스 이름 표시
-        renderClassNames();
-
-
-        // 클래스별 결과 표시 영역 생성
-        createPredictionElements();
-
-
-        setStatus(
-          "모델 준비가 완료되었습니다. 사진을 선택해 주세요.",
-          "success"
-        );
-
-
-        return true;
-
-
-      } catch (error) {
-
-        console.error(
-          "모델 로딩 오류:",
-          error
-        );
-
-
-        model = null;
-
-        classNames = [];
-
-
-        classListElement.innerHTML = `
-          <span class="loading-text">
-            클래스 정보를 불러오지 못했습니다.
-          </span>
-        `;
-
-
-        setStatus(
-          "모델을 불러오지 못했습니다. 모델 주소와 인터넷 연결을 확인한 뒤 페이지를 새로고침해 다시 시도하세요.",
-          "error"
-        );
-
-
-        return false;
-
-
-      } finally {
-
-        isModelLoading = false;
-
-        // 예측 중이 아니라면 파일 선택 다시 활성화
-        if (!isPredicting) {
-
-          imageUpload.disabled = false;
-
-          uploadLabel.classList.remove(
-            "disabled"
-          );
-
-        }
-
+        setStatus("파이리 AI 모델을 불러오는 중...");
+        model = await tmImage.load(MODEL_URL + "model.json", MODEL_URL + "metadata.json");
+        classNames = model.getClassLabels();
+        
+        // 클래스 태그 생성
+        classListElement.innerHTML = classNames.map(name => `<span class="class-tag">${name}</span>`).join('');
+        
+        // UI 게이지 바 틀 생성
+        createPredictionUI();
+        setStatus("모델 로딩 완료! 분석을 시작할 수 있습니다.", "success");
+      } catch (err) {
+        console.error(err);
+        setStatus("모델을 불러오지 못했습니다. 주소를 확인해주세요.", "error");
       }
-
     }
 
+    function createPredictionUI() {
+      predictionList.innerHTML = classNames.map((name, i) => `
+        <div class="prediction-item">
+          <div class="prediction-row">
+            <span>${name}</span>
+            <span id="percent-${i}">0%</span>
+          </div>
+          <div class="progress-track">
+            <div id="bar-${i}" class="progress-bar"></div>
+          </div>
+        </div>
+      `).join('');
+    }
 
-    /* ==========================================
-       실제 클래스 이름 화면에 표시
-    ========================================== */
-    function renderClassNames() {
+    // 파일 업로드 처리
+    imageUpload.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
 
-      classListElement.innerHTML = "";
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        previewImage.src = event.target.result;
+        previewImage.style.display = "block";
+        imagePlaceholder.style.display = "none";
+        
+        previewImage.onload = async () => {
+          setStatus("사진 분석 중...");
+          const predictions = await model.predict(previewImage);
+          updateResults(predictions);
+          setStatus("분석이 완료되었습니다!", "success");
+        };
+      };
+      reader.readAsDataURL(file);
+    });
 
+    // 실시간 웹캠 토글
+    async function toggleWebcam() {
+      const btn = document.getElementById("webcam-btn");
 
-      classNames.forEach((className) => {
+      if (isWebcamRunning) {
+        stopWebcam();
+        btn.textContent = "📷 웹캠 시작하기";
+        setStatus("웹캠이 중지되었습니다.");
+      } else {
+        try {
+          setStatus("카메라 연결 중...");
+          webcam = new tmImage.Webcam(300, 300, true); // width, height, flip
+          await webcam.setup();
+          await webcam.play();
+          
+          webcamContainer.innerHTML = '';
+          webcamContainer.appendChild(webcam.canvas);
+          imagePlaceholder.style.display = "none";
+          
+          isWebcamRunning = true;
+          btn.textContent = "🛑 웹캠 중지하기";
+          setStatus("실시간 카메라 분석 중...", "success");
+          
+          window.requestAnimationFrame(webcamLoop);
+        } catch (err) {
+          console.error(err);
+          setStatus("카메라를 켤 수 없습니다. 권한을 확인해주세요.", "error");
+        }
+      }
+    }
 
-        const tag =
-          document.createElement("span");
+    async function webcamLoop() {
+      if (!isWebcamRunning) return;
+      webcam.update();
+      const predictions = await model.predict(webcam.canvas);
+      updateResults(predictions);
+      window.requestAnimationFrame(webcamLoop);
+    }
 
-        tag.className = "class-tag";
+    function stopWebcam() {
+      if (webcam) {
+        webcam.stop();
+        isWebcamRunning = false;
+      }
+      const btn = document.getElementById("webcam-btn");
+      if (btn) btn.textContent = "📷 웹캠 시작하기";
+    }
 
-        // 모델에서 가져온 실제 이름 사용
-        tag.textContent = className;
+    // 예측 결과 업데이트 및 파이리 반응 제어
+    function updateResults(predictions) {
+      let highest = predictions[0];
 
-        classListElement.appendChild(tag);
+      predictions.forEach((pred, i) => {
+        const percent = Math.round(pred.probability * 100);
+        document.getElementById(`percent-${i}`).textContent = `${percent}%`;
+        document.getElementById(`bar-${i}`).style.width = `${percent}%`;
 
+        if (pred.probability > highest.probability) {
+          highest = pred;
+        }
       });
 
+      // 최고 확률 클래스 표시
+      const highestPercent = Math.round(highest.probability * 100);
+      topClassElement.textContent = highest.className;
+      topProbabilityElement.textContent = `확률: ${highestPercent}%`;
+
+      /* ====================================
+         클래스 결과에 따른 파이리 표정 처리
+      ==================================== */
+      const className = highest.className.toLowerCase();
+
+      // 결과 클래스명에 '있음'이 포함되었거나, 빵 이름이 직접 감지된 경우 (긍정)
+      if (className.includes("있음") || className.includes("있") || className.includes("파이리")) {
+        charmanderImg.src = CHARMANDER_HAPPY;
+        reactionText.textContent = "🔥 신난다! 파이리빵 재고가 있어요!";
+        reactionText.style.color = "#166534"; // 초록색 문구
+      } 
+      // '없음'이 포함된 경우 (부정)
+      else if (className.includes("없음") || className.includes("없")) {
+        charmanderImg.src = CHARMANDER_SAD;
+        reactionText.textContent = "😭 아쉬워요... 파이리빵이 다 팔렸어요!";
+        reactionText.style.color = "#b91c1c"; // 빨간색 문구
+      } 
+      // 그 외 기타
+      else {
+        charmanderImg.src = CHARMANDER_IDLE;
+        reactionText.textContent = `현재 상태: ${highest.className}`;
+        reactionText.style.color = "var(--primary-dark)";
+      }
     }
 
-
-    /* ==========================================
-       클래스별 확률 표시 요소 생성
-    ========================================== */
-    function createPredictionElements() {
-
-      predictionList.innerHTML = "";
-
-
-      classNames.forEach(
-        (className, index) => {
-
-          const item =
-            document.createElement("div");
-
-          item.className =
-            "prediction-item";
-
-
-          // 실제 클래스 이름을 안전하게 표시
-          const name =
-            document.createElement("div");
-
-          name.className =
-            "prediction-row";
-
-
-          const classNameElement =
-            document.createElement("span");
-
-          classNameElement.className =
-            "prediction-name";
-
-          classNameElement.textContent =
-            className;
-
-
-          const percentElement =
-            document.createElement("span");
-
-          percentElement.className =
-            "prediction-percent";
-
-          percentElement.id =
-            `percent-${index}`;
-
-          percentElement.textContent =
-            "0%";
-
-
-          name.appendChild(
-            classNameElement
-          );
-
-          name.appendChild(
-            percentElement
-          );
-
-
-          const track =
-            document.createElement("div");
-
-          track.className =
-            "progress-track";
-
-
-          const bar =
-            document.createElement("div");
-
-          bar.className =
-            "progress-bar";
-
-          bar.id =
-            `bar-${index}`;
-
-
-          track.appendChild(bar);
-
-          item.appendChild(name);
-
-          item.appendChild(track);
-
-          predictionList.appendChild(item);
-
-        }
-      );
-
-    }
-
-
-    /* ==========================================
-       페이지가 열릴 때 모델 불러오기
-
-       카메라나 마이크와 달리 사진 파일 선택은
-       권한을 자동으로 요청하지 않습니다.
-    ========================================== */
-    loadModel();
-
-
-    /* ==========================================
-       사용자가 사진을 선택했을 때 실행
-    ========================================== */
-    imageUpload.addEventListener(
-      "change",
-      handleImageUpload
-    );
-
-
-    /* ==========================================
-       사진 파일 처리
-    ========================================== */
-    async function handleImageUpload(event) {
-
-      // 이미 예측 중이라면 중복 실행 방지
-      if (isPredicting) {
-        return;
-      }
-
-
-      const file =
-        event.target.files[0];
-
-
-      // 선택한 파일이 없으면 종료
-      if (!file) {
-        return;
-      }
-
-
-      /* --------------------------------
-         이미지 파일인지 확인
-      -------------------------------- */
-      if (
-        !file.type ||
-        !file.type.startsWith("image/")
-      ) {
-
-        setStatus(
-          "이미지 파일을 선택해 주세요.",
-          "error"
-        );
-
-        // 같은 파일을 다시 선택할 수 있도록 초기화
-        imageUpload.value = "";
-
-        return;
-      }
-
-
-      // 모델이 없으면 다시 불러오기
-      if (!model) {
-
-        const loaded =
-          await loadModel();
-
-        if (!loaded) {
-          return;
-        }
-
-      }
-
-
-      isPredicting = true;
-
-      imageUpload.disabled = true;
-
-      uploadLabel.classList.add("disabled");
-
-
-      setStatus(
-        "선택한 사진을 불러오는 중입니다..."
-      );
-
-
-      /* --------------------------------
-         FileReader를 사용해
-         선택한 사진을 화면에 표시
-      -------------------------------- */
-      const reader =
-        new FileReader();
-
-
-      reader.onload = async function(e) {
-
-        try {
-
-          // 사진 주소 설정
-          previewImage.src =
-            e.target.result;
-
-
-          // 사진이 완전히 로드된 뒤 예측
-          previewImage.onload =
-            async function() {
-
-              imagePlaceholder.style.display =
-                "none";
-
-              previewImage.style.display =
-                "block";
-
-
-              setStatus(
-                "사진을 분석하고 있습니다..."
-              );
-
-
-              try {
-
-                /* --------------------------
-                   선택한 이미지를 모델에 입력
-                -------------------------- */
-                const predictions =
-                  await model.predict(
-                    previewImage
-                  );
-
-
-                // 결과 표시
-                updatePredictionUI(
-                  predictions
-                );
-
-
-                setStatus(
-                  "분류가 완료되었습니다. 다른 사진을 선택해 다시 시험할 수도 있습니다.",
-                  "success"
-                );
-
-
-              } catch (error) {
-
-                console.error(
-                  "예측 오류:",
-                  error
-                );
-
-
-                setStatus(
-                  "사진을 분석하는 중 오류가 발생했습니다. 다른 이미지 파일을 선택하거나 다시 시도하세요.",
-                  "error"
-                );
-
-              } finally {
-
-                // 예측 완료 후 다시 사진 선택 가능
-                isPredicting = false;
-
-                imageUpload.disabled =
-                  false;
-
-                uploadLabel.classList.remove(
-                  "disabled"
-                );
-
-              }
-
-            };
-
-
-          previewImage.onerror =
-            function() {
-
-              setStatus(
-                "선택한 사진을 불러올 수 없습니다. 다른 이미지 파일을 선택해 주세요.",
-                "error"
-              );
-
-
-              isPredicting = false;
-
-              imageUpload.disabled =
-                false;
-
-              uploadLabel.classList.remove(
-                "disabled"
-              );
-
-            };
-
-
-        } catch (error) {
-
-          console.error(
-            "이미지 처리 오류:",
-            error
-          );
-
-
-          setStatus(
-            "사진을 처리하는 중 오류가 발생했습니다. 다시 시도해 주세요.",
-            "error"
-          );
-
-
-          isPredicting = false;
-
-          imageUpload.disabled =
-            false;
-
-          uploadLabel.classList.remove(
-            "disabled"
-          );
-
-        }
-
-      };
-
-
-      reader.onerror = function() {
-
-        setStatus(
-          "사진 파일을 읽지 못했습니다. 다른 파일을 선택해 주세요.",
-          "error"
-        );
-
-
-        isPredicting = false;
-
-        imageUpload.disabled =
-          false;
-
-        uploadLabel.classList.remove(
-          "disabled"
-        );
-
-      };
-
-
-      // 실제 파일 읽기 시작
-      reader.readAsDataURL(file);
-
-    }
-
-
-    /* ==========================================
-       예측 결과 업데이트
-    ========================================== */
-    function updatePredictionUI(predictions) {
-
-      if (
-        !Array.isArray(predictions) ||
-        predictions.length === 0
-      ) {
-        return;
-      }
-
-
-      let highestPrediction =
-        predictions[0];
-
-
-      predictions.forEach(
-        (prediction, index) => {
-
-          // 0~1의 확률을 0~100%로 변환
-          const percent =
-            prediction.probability * 100;
-
-
-          // 소수점 첫째 자리까지 표시
-          const roundedPercent =
-            Math.round(percent * 10) / 10;
-
-
-          /* ------------------------------
-             확률 텍스트 업데이트
-          ------------------------------ */
-          const percentElement =
-            document.getElementById(
-              `percent-${index}`
-            );
-
-
-          if (percentElement) {
-
-            percentElement.textContent =
-              `${roundedPercent}%`;
-
-          }
-
-
-          /* ------------------------------
-             가로 막대 길이 업데이트
-          ------------------------------ */
-          const barElement =
-            document.getElementById(
-              `bar-${index}`
-            );
-
-
-          if (barElement) {
-
-            barElement.style.width =
-              `${percent}%`;
-
-          }
-
-
-          /* ------------------------------
-             가장 높은 확률 찾기
-          ------------------------------ */
-          if (
-            prediction.probability >
-            highestPrediction.probability
-          ) {
-
-            highestPrediction =
-              prediction;
-
-          }
-
-        }
-      );
-
-
-      /* --------------------------------
-         가장 높은 결과 표시
-      -------------------------------- */
-      const highestPercent =
-        Math.round(
-          highestPrediction.probability * 1000
-        ) / 10;
-
-
-      topClassElement.textContent =
-        highestPrediction.className;
-
-
-      topProbabilityElement.textContent =
-        `예측 확률 ${highestPercent}%`;
-
-    }
-
+    // 초기화
+    init();
   </script>
-
 </body>
 </html>
