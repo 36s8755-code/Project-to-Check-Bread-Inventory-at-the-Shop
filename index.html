@@ -90,7 +90,7 @@
       text-shadow: 2px 2px 0px #ffffff;
     }
 
-    /* 제목 옆 파이리 아이콘 */
+    /* 제목 옆 파이리 아이콘 (1번째 기본 화면) */
     .header-icon {
       width: 44px;
       height: 44px;
@@ -316,7 +316,7 @@
     <header class="retro-card">
       <span class="team-label">★ POKEMON BREAD CHECKER ★</span>
       <h1>
-        <!-- 1번째 사진: 기본 파이리 -->
+        <!-- 1번째 사진: 기본 파이리 화면 사진 -->
         <img src="https://img.pokemondb.net/artwork/large/charmander.jpg" alt="파이리" class="header-icon">
         파이리빵 재고 확인
       </h1>
@@ -411,14 +411,14 @@
     const MODEL_URL = "https://teachablemachine.withgoogle.com/models/IQ8U4bu7b/";
     
     /* ==================================================
-       원본 이미지 URL 세트 (누끼 처리 없음)
-       1. 기본 화면: 1번째 사진
-       2. 빵 있음: 2번째 사진
-       3. 빵 없음: 3번째 사진
+       요청하신 사진 파일 경로 반영
+       1. 기본 화면: 기존 파이리 이미지
+       2. 빵 있음: Charmander_.jpg
+       3. 빵 없음: 다운로드 (3).jpg
     ================================================== */
     const CHARMANDER_IDLE = "https://img.pokemondb.net/artwork/large/charmander.jpg"; 
-    const CHARMANDER_HAPPY = "https://img.pokemondb.net/artwork/large/charmander.jpg"; 
-    const CHARMANDER_SAD = "https://img.pokemondb.net/artwork/large/charmander.jpg";
+    const CHARMANDER_HAPPY = "Charmander_.jpg"; 
+    const CHARMANDER_SAD = "다운로드 (3).jpg";
 
     let model, webcam, classNames = [];
     let currentMode = 'file';
@@ -578,19 +578,19 @@
 
       const className = highest.className.toLowerCase();
 
-      // [빵 있음]
+      // [빵 있음 화면] -> Charmander_.jpg 사진 표시
       if (className.includes("있음") || className.includes("있") || className.includes("파이리")) {
         charmanderImg.src = CHARMANDER_HAPPY;
         reactionText.textContent = "★ 야호! 파이리빵 재고 발견!";
         reactionText.style.color = "#1b5e20";
       } 
-      // [빵 없음]
+      // [빵 없음 화면] -> 다운로드 (3).jpg 사진 표시
       else if (className.includes("없음") || className.includes("없")) {
         charmanderImg.src = CHARMANDER_SAD;
         reactionText.textContent = "😭 빵이 없어 시무룩해진 파이리...";
         reactionText.style.color = "#b71c1c";
       } 
-      // [기타]
+      // 기타
       else {
         charmanderImg.src = CHARMANDER_IDLE;
         reactionText.textContent = `감지됨: ${highest.className}`;
