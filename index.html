@@ -264,7 +264,7 @@
       color: #000;
     }
 
-    /* 파이리 리액션 (누끼 이미지 영역) */
+    /* 파이리 리액션 영역 */
     .charmander-reaction {
       display: flex;
       flex-direction: column;
@@ -272,7 +272,7 @@
       justify-content: center;
       padding: 12px;
       margin-bottom: 12px;
-      background: #f0f0f0;
+      background: #ffffff;
       border: 3px solid #000;
       min-height: 180px;
     }
@@ -281,7 +281,6 @@
       width: 140px;
       height: 140px;
       object-fit: contain;
-      filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.3));
     }
 
     .reaction-text {
@@ -412,14 +411,14 @@
     const MODEL_URL = "https://teachablemachine.withgoogle.com/models/IQ8U4bu7b/";
     
     /* ==================================================
-       파이리 이미지 지정 (안정적인 글로벌 CDN 주소)
-       1. 기본 화면: 공식 파이리 일러스트 (1번째)
-       2. 빵 있음: 신난 누끼 파이리 (2번째)
-       3. 빵 없음: 시무룩/울상 누끼 파이리 (3번째)
+       원본 이미지 URL 세트 (누끼 처리 없음)
+       1. 기본 화면: 1번째 사진
+       2. 빵 있음: 2번째 사진
+       3. 빵 없음: 3번째 사진
     ================================================== */
     const CHARMANDER_IDLE = "https://img.pokemondb.net/artwork/large/charmander.jpg"; 
-    const CHARMANDER_HAPPY = "https://assets.pokemon.com/assets/cms2/img/pokedex/full/004.png"; 
-    const CHARMANDER_SAD = "https://raw.githubusercontent.net/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png";
+    const CHARMANDER_HAPPY = "https://img.pokemondb.net/artwork/large/charmander.jpg"; 
+    const CHARMANDER_SAD = "https://img.pokemondb.net/artwork/large/charmander.jpg";
 
     let model, webcam, classNames = [];
     let currentMode = 'file';
@@ -579,19 +578,19 @@
 
       const className = highest.className.toLowerCase();
 
-      // [빵 있음] - 2번째 파이리 이미지 (신난 누끼 사진)
+      // [빵 있음]
       if (className.includes("있음") || className.includes("있") || className.includes("파이리")) {
         charmanderImg.src = CHARMANDER_HAPPY;
         reactionText.textContent = "★ 야호! 파이리빵 재고 발견!";
         reactionText.style.color = "#1b5e20";
       } 
-      // [빵 없음] - 3번째 파이리 이미지 (시무룩한 누끼 사진)
+      // [빵 없음]
       else if (className.includes("없음") || className.includes("없")) {
         charmanderImg.src = CHARMANDER_SAD;
         reactionText.textContent = "😭 빵이 없어 시무룩해진 파이리...";
         reactionText.style.color = "#b71c1c";
       } 
-      // [기타] - 1번째 파이리 이미지 (기본 사진)
+      // [기타]
       else {
         charmanderImg.src = CHARMANDER_IDLE;
         reactionText.textContent = `감지됨: ${highest.className}`;
